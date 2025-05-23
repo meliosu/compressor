@@ -1,0 +1,2 @@
+cargo run --release -- -a bwt -c -i tests/enwik8 -o tests/enwik8-c-bwt
+cargo run --release -- -a bwt -d -i tests/enwik8-c-bwt -o tests/enwik8-d-bwt

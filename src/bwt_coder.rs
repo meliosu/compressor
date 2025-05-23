@@ -3,9 +3,10 @@
 use std::{
     io::{self, Cursor, Read, Write},
     marker::PhantomData,
+    usize,
 };
 
-const CHUNK_SIZE: usize = 32768;
+const CHUNK_SIZE: usize = 1024 * 1024;
 
 pub struct BWTCoder {
     p: PhantomData<()>,
@@ -26,32 +27,23 @@ impl BWTCoder {
             let (bwt, index) = crate::bwt::bwt(chunk);
             writer.write(&index.to_be_bytes())?;
 
-            let mut curr = 0;
-            let mut len = 0;
+            let mut curr = bwt[0];
+            let mut len = 1;
 
-            for &byte in &bwt {
-                if len == 0 {
+            for &byte in &bwt[1..] {
+                if curr == byte && len < 255 {
+                    len += 1;
+                } else {
+                    writer.write(std::array::from_ref(&(len as u8)))?;
+                    writer.write(std::array::from_ref(&curr))?;
+
                     curr = byte;
                     len = 1;
-                    continue;
                 }
-
-                if curr == byte && len < 256 {
-                    len += 1;
-                    continue;
-                }
-
-                writer.write(std::array::from_ref(&(len as u8)))?;
-                writer.write(std::array::from_ref(&byte))?;
-
-                curr = byte;
-                len = 1;
             }
 
-            if len > 0 {
-                writer.write(std::array::from_ref(&(len as u8)))?;
-                writer.write(std::array::from_ref(&curr))?;
-            }
+            writer.write(std::array::from_ref(&(len as u8)))?;
+            writer.write(std::array::from_ref(&curr))?;
         }
 
         Ok(output)
