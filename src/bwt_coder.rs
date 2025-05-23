@@ -6,7 +6,7 @@ use std::{
     usize,
 };
 
-const CHUNK_SIZE: usize = 1024 * 1024;
+const CHUNK_SIZE: usize = 1024 * 1024 * 64;
 
 pub struct BWTCoder {
     p: PhantomData<()>,
