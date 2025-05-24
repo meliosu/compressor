@@ -25,10 +25,13 @@ impl BWTCoder {
             let (bwt, index) = crate::bwt::bwt(chunk);
             writer.write(&(index as u32).to_be_bytes())?;
 
-            let mut curr = bwt[0];
+            let mtf = crate::mtf::mtf(&bwt);
+            let data = mtf;
+
+            let mut curr = data[0];
             let mut len = 1;
 
-            for &byte in &bwt[1..] {
+            for &byte in &data[1..] {
                 if curr == byte && len < 255 {
                     len += 1;
                 } else {
@@ -64,7 +67,8 @@ impl BWTCoder {
                 chunk.extend(std::iter::repeat_n(byte, len as usize));
             }
 
-            let data = crate::bwt::ibwt(&chunk, index as usize);
+            let data = crate::mtf::imtf(&chunk);
+            let data = crate::bwt::ibwt(&data, index as usize);
             output.extend(data);
         }
 
