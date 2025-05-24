@@ -2,8 +2,8 @@ use anyhow::bail;
 use clap::Parser;
 
 use markov_huffman::{
-    bwt_coder::BWTCoder, bwt_huffman::BWTHuffmanCoder, huffman::HuffmanCoder,
-    markov_arithmetic::MarkovArithmeticCoder,
+    bwt_coder::BWTCoder, bwt_huffman::BWTHuffmanCoder, bwt_mtf_rle_huffman::BwtMtfRleHuffmanCoder,
+    huffman::HuffmanCoder, markov_arithmetic::MarkovArithmeticCoder, rans::ANSCoder,
 };
 
 fn main() {
@@ -60,6 +60,30 @@ fn app() -> anyhow::Result<()> {
 
         "markov-arithmetic" => {
             let coder = MarkovArithmeticCoder::new();
+
+            let output = if args.compress {
+                coder.encode(&input)?
+            } else {
+                coder.decode(&input)?
+            };
+
+            std::fs::write(&args.output, output)?;
+        }
+
+        "bwt-mtf-rle-huffman" => {
+            let coder = BwtMtfRleHuffmanCoder::new();
+
+            let output = if args.compress {
+                coder.encode(&input)?
+            } else {
+                coder.decode(&input)?
+            };
+
+            std::fs::write(&args.output, output)?;
+        }
+
+        "ans" => {
+            let mut coder = ANSCoder::new();
 
             let output = if args.compress {
                 coder.encode(&input)?

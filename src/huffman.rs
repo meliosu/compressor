@@ -12,12 +12,12 @@ use bitbit::BitReader;
 use bitbit::BitWriter;
 use bitbit::MSB;
 
-struct TreeNode {
+pub struct TreeNode {
     frequency: u64,
     kind: TreeNodeKind,
 }
 
-enum TreeNodeKind {
+pub enum TreeNodeKind {
     Leaf {
         byte: u8,
     },
@@ -28,13 +28,13 @@ enum TreeNodeKind {
 }
 
 #[derive(Clone, Copy, Default)]
-struct Code {
+pub struct Code {
     word: u64,
     len: usize,
 }
 
 impl TreeNode {
-    fn build(frequencies: &[u64; 256]) -> Option<Self> {
+    pub fn build(frequencies: &[u64; 256]) -> Option<Self> {
         let mut queue = VecDeque::<TreeNode>::new();
 
         for byte in 0..=255 {
@@ -77,7 +77,7 @@ impl TreeNode {
         queue.pop_front()
     }
 
-    fn codes(&self) -> [Code; 256] {
+    pub fn codes(&self) -> [Code; 256] {
         fn codes_recursive(node: &TreeNode, codes: &mut [Code; 256], word: u64, len: usize) {
             match &node.kind {
                 TreeNodeKind::Leaf { byte } => codes[*byte as usize] = Code { word, len },
@@ -93,7 +93,7 @@ impl TreeNode {
         codes
     }
 
-    fn encode<W: Write>(&self, writer: &mut BitWriter<W>) -> io::Result<()> {
+    pub fn encode<W: Write>(&self, writer: &mut BitWriter<W>) -> io::Result<()> {
         match &self.kind {
             TreeNodeKind::Leaf { byte } => {
                 writer.write_bit(true)?;
@@ -110,7 +110,7 @@ impl TreeNode {
         Ok(())
     }
 
-    fn decode<R: Read>(reader: &mut BitReader<R, MSB>) -> io::Result<Self> {
+    pub fn decode<R: Read>(reader: &mut BitReader<R, MSB>) -> io::Result<Self> {
         if reader.read_bit()? {
             let byte = reader.read_byte()?;
 
@@ -132,7 +132,7 @@ impl TreeNode {
         }
     }
 
-    fn decode_symbol<R: Read>(&self, reader: &mut BitReader<R, MSB>) -> io::Result<u8> {
+    pub fn decode_symbol<R: Read>(&self, reader: &mut BitReader<R, MSB>) -> io::Result<u8> {
         let mut node = self;
 
         loop {
@@ -233,5 +233,11 @@ impl HuffmanCoder {
         }
 
         frequencies
+    }
+}
+
+impl Code {
+    pub fn encode<W: Write>(&self, writer: &mut BitWriter<W>) -> io::Result<()> {
+        writer.write_bits(self.word as u32, self.len)
     }
 }

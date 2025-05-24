@@ -1,7 +1,8 @@
 pub mod bwt;
 pub mod bwt_coder;
 pub mod bwt_huffman;
+pub mod bwt_mtf_rle_huffman;
 pub mod huffman;
 pub mod markov_arithmetic;
 pub mod mtf;
-
+pub mod rans;
