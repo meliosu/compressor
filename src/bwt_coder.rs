@@ -6,7 +6,7 @@ use std::{
     usize,
 };
 
-const CHUNK_SIZE: usize = 1024 * 1024 * 64;
+const CHUNK_SIZE: usize = 1024 * 1024 * 8;
 
 pub struct BWTCoder {
     p: PhantomData<()>,
@@ -21,11 +21,9 @@ impl BWTCoder {
         let mut output = Vec::new();
         let mut writer = Cursor::new(&mut output);
 
-        writer.write(&bytes.chunks(CHUNK_SIZE).count().to_be_bytes())?;
-
         for chunk in bytes.chunks(CHUNK_SIZE) {
             let (bwt, index) = crate::bwt::bwt(chunk);
-            writer.write(&index.to_be_bytes())?;
+            writer.write(&(index as u32).to_be_bytes())?;
 
             let mut curr = bwt[0];
             let mut len = 1;
@@ -34,16 +32,13 @@ impl BWTCoder {
                 if curr == byte && len < 255 {
                     len += 1;
                 } else {
-                    writer.write(std::array::from_ref(&(len as u8)))?;
-                    writer.write(std::array::from_ref(&curr))?;
-
+                    writer.write(&[len as u8, curr])?;
                     curr = byte;
                     len = 1;
                 }
             }
 
-            writer.write(std::array::from_ref(&(len as u8)))?;
-            writer.write(std::array::from_ref(&curr))?;
+            writer.write(&[len as u8, curr])?;
         }
 
         Ok(output)
@@ -53,39 +48,23 @@ impl BWTCoder {
         let mut output = Vec::new();
         let mut reader = Cursor::new(bytes);
 
-        let mut chunk_count_bytes = [0u8; 8];
-        reader.read(&mut chunk_count_bytes)?;
-        let chunk_count = usize::from_be_bytes(chunk_count_bytes);
+        let mut index_bytes = [0u8; 4];
 
-        for _ in 0..chunk_count {
+        while reader.read(&mut index_bytes)? == index_bytes.len() {
+            let index = u32::from_be_bytes(index_bytes);
             let mut chunk = Vec::new();
 
-            let mut index_bytes = [0u8; 8];
-            reader.read(&mut index_bytes)?;
-            let index = usize::from_be_bytes(index_bytes);
-
-            loop {
-                let mut len = 0u8;
-                let mut byte = 0u8;
-
-                if reader.read(std::array::from_mut(&mut len))? == 0 {
+            while chunk.len() < CHUNK_SIZE {
+                let mut header = [0u8; 2];
+                if reader.read(&mut header)? < 2 {
                     break;
                 }
 
-                if reader.read(std::array::from_mut(&mut byte))? == 0 {
-                    break;
-                }
-
-                for _ in 0..len {
-                    chunk.push(byte);
-                }
-
-                if chunk.len() == CHUNK_SIZE {
-                    break;
-                }
+                let [len, byte] = header;
+                chunk.extend(std::iter::repeat_n(byte, len as usize));
             }
 
-            let data = crate::bwt::ibwt(&chunk, index);
+            let data = crate::bwt::ibwt(&chunk, index as usize);
             output.extend(data);
         }
 
