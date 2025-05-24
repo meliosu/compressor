@@ -8,3 +8,4 @@ anyhow = "1.0.98"
 arcode = "0.2.4"
 bitbit = "0.2.0"
 clap = { version = "4.5.38", features = ["derive"] }
+rans = "0.4.0"

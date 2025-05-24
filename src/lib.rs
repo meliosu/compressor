@@ -6,3 +6,4 @@ pub mod huffman;
 pub mod markov_arithmetic;
 pub mod mtf;
 pub mod rans;
+pub mod rans_lib;
