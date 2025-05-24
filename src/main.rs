@@ -1,7 +1,10 @@
 use anyhow::bail;
 use clap::Parser;
 
-use markov_huffman::{bwt_coder::BWTCoder, bwt_huffman::BWTHuffmanCoder, huffman::HuffmanCoder};
+use markov_huffman::{
+    bwt_coder::BWTCoder, bwt_huffman::BWTHuffmanCoder, huffman::HuffmanCoder,
+    markov_arithmetic::MarkovArithmeticCoder,
+};
 
 fn main() {
     if let Err(e) = app() {
@@ -45,6 +48,18 @@ fn app() -> anyhow::Result<()> {
 
         "bwt-huffman" => {
             let coder = BWTHuffmanCoder::new();
+
+            let output = if args.compress {
+                coder.encode(&input)?
+            } else {
+                coder.decode(&input)?
+            };
+
+            std::fs::write(&args.output, output)?;
+        }
+
+        "markov-arithmetic" => {
+            let coder = MarkovArithmeticCoder::new();
 
             let output = if args.compress {
                 coder.encode(&input)?
